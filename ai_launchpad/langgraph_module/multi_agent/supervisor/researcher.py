@@ -1,14 +1,16 @@
+import operator
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
 from typing import Annotated, List
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import SystemMessage, ToolMessage
 from langgraph.graph import StateGraph, add_messages, END
 from langgraph.prebuilt import ToolNode
-from langchain_core.tools import tool
+from langchain_core.tools import tool, InjectedToolCallId
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_tavily import TavilySearch, TavilyExtract
 from datetime import datetime
+from langgraph.types import Command
 
 load_dotenv()
 
@@ -56,13 +58,45 @@ async def extract_content_from_webpage(urls: List[str]):
     results = web_extract.invoke(input={"urls": urls})["results"]
     return results
 
+class ResearchReport(BaseModel):
+    topic: str
+    report: str
+
+@tool
+async def generate_research_report(
+    topic: str,
+    report: str,
+    tool_call_id: Annotated[str, InjectedToolCallId],
+    ):
+    """Generate a research report on a specific topic.
+
+    Args:
+        topic: The topic to research.
+        report: The research report.
+    """
+    research_report = ResearchReport.model_validate({
+        "topic": topic,
+        "report": report
+        })
+
+    return Command(update={
+        "research_reports": [research_report],
+        "messages": [ToolMessage(
+            name="generate_research_report",
+            content=research_report.model_dump_json(),
+            tool_call_id=tool_call_id,
+            )],
+        })
+
 
 class ResearcherState(BaseModel):
     messages: Annotated[list, add_messages] = []
+    research_reports: Annotated[list, operator.add] = []
 
 tools = [
     search_web, 
     extract_content_from_webpage,
+    generate_research_report,
     ]
 
 llm = ChatOpenAI(
@@ -73,34 +107,38 @@ llm = ChatOpenAI(
 llm_with_tools = llm.bind_tools(tools)
 
 async def researcher(state: ResearcherState):
-    system_prompt = SystemMessage(content=f"""You are a research assistant. Your job is to help the user answer questions by performing research. Do not rely on your own knowledge, always use the tools to answer the user's questions.
+    system_prompt = SystemMessage(content=f"""You are a research assistant. Your job is to help the user answer questions by performing research. Do not rely on your own knowledge, always use the tools to answer the user's questions. ALWAYS use the tools to generate the final research report.
 
     <tools>
-    search_web: Use this tool to search the web. Returned results include the page title, url, and a content snippet of each webpage.
-    extract_content_from_webpage: Use this tool to extract the complete contents from a webpage given the url.
+    search_web: Search the web. Returned results include the page title, url, and a content snippet of each webpage.
+    extract_content_from_webpage: Extract the complete contents from a webpage given the url.
+    generate_research_report: Generate a research report on a specific topic.
     </tools>
                                   
-    <output_format>
+    You should use the search_web and extract_content_from_webpage tools to gather information. You can call these tools multiple times to gather all the information you need and then use the generate_research_report tool to generate the final research report.
+                                  
+    <report_format>
     The output of the final report should be in markdown format and always include a list of citations at the end of the report with the format: [Source Name] (URL).
-    </output_format>
+    </report_format>
                                   
-    <example>
-    User: What are the top 5 companies in the world by market value?
+    <generate_research_report_example>
+    {{
+        "topic": "Top 5 companies in the world by market value",
+        "report": "## Executive Summary
+            Here are the top 5 companies in the world by market value (market capitalization):
+                                        
+            1. Nvidia — $4.3 trillion
+            2. Microsoft — $3.8 trillion
+            3. Apple — $3.5 trillion
+            4. Alphabet (Google) — $3 trillion
+            5. Amazon — $2.5 trillion
                                   
-    Researcher: # Top 5 Companies in the World by Market Value
-    
-    ## Report
-    Here are the top 5 companies in the world by market value (market capitalization):
-                                  
-    1. Nvidia — $4.3 trillion
-    2. Microsoft — $3.8 trillion
-    3. Apple — $3.5 trillion
-    4. Alphabet (Google) — $3 trillion
-    5. Amazon — $2.5 trillion
-    
-    ## Citations
-    [1] [Motley Fool — "The Largest Companies by Market Cap" (updated Sep 3 / data listed Sep 16, 2025)](https://www.fool.com/research/largest-companies-by-market-cap/)
-    </example>
+            ## Additional Sections...
+            
+            ## Citations
+            [1] [Motley Fool — "The Largest Companies by Market Cap" (updated Sep 3 / data listed Sep 16, 2025)](https://www.fool.com/research/largest-companies-by-market-cap/)"
+    }}
+    </generate_research_report_example>
                                   
     The current date and time is {datetime.now()}.
     """)
@@ -128,7 +166,10 @@ builder.add_conditional_edges(
     }
 )
 
-graph = builder.compile(checkpointer=MemorySaver())
+# don't use a checkpointer if using as a subgraph, the parent graph's checkpointer will be used
+graph = builder.compile()
+
+# graph = builder.compile(checkpointer=MemorySaver())
 
 # Visualize the graph
 # from IPython.display import Image

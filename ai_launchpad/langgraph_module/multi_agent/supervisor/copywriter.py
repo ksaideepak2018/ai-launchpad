@@ -83,7 +83,7 @@ linkedin_example = open("example_content/linkedin.md", "r").read()
 blog_example = open("example_content/blog.md", "r").read()
 
 async def copywriter(state: CopyWriterState):
-    system_prompt = SystemMessage(content=f"""You are a copywriter. Your job is to write highly engaging content based on the topic provided by the user. For some topics, you may be provided additional context in the form of research reports. Always check to see if there are research reports available and use them to inform your writing. Do not respond directly with the content, instead use the tools to generate the content.
+    system_prompt = SystemMessage(content=f"""You are a copywriter. Your job is to write highly engaging content based on the topic provided by the user. For some topics, you may be provided additional context in the form of research reports. Always check to see if there are research reports available and use them to inform your writing. ALWAYS use the tools to generate the content.
 
     <tools>
     review_research_reports: Use this tool to review the research reports to inform your writing. If there are no research reports available but you think they would be helpful, you should request the research you need to write the content.
@@ -126,7 +126,10 @@ builder.add_conditional_edges(
 )
 builder.add_edge("tools", "copywriter")
 
-graph = builder.compile(checkpointer=MemorySaver())
+# don't use a checkpointer if using as a subgraph, the parent graph's checkpointer will be used
+graph = builder.compile()
+
+# graph = builder.compile(checkpointer=MemorySaver())
 
 
 # Visualize the graph
