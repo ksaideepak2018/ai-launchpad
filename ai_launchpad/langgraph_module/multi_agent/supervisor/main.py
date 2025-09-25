@@ -123,10 +123,10 @@ async def main():
     try:
         config = RunnableConfig(configurable={
             "thread_id": "1",
-            "recursion_limit": 30,
+            "recursion_limit": 50,
         })
 
-        print("🎯 Running Supervisor with Subgraphs")
+        print("\n🎯 Running Supervisor with Subgraphs")
         print("=" * 50)
 
         while True:
@@ -156,3 +156,5 @@ if __name__ == "__main__":
     nest_asyncio.apply()
     asyncio.run(main())
     
+# Example prompts
+# write a linkedin post on the top AI tools that small businesses and entrepreneurs need to be using to scale their businesses. include real-world examples and case studies where businesses are using these tools to scale their business with real numbers. include a call to action at the end for readers to follow me for more actionable playbooks on how to generate real value for their business.
