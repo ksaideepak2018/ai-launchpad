@@ -27,7 +27,11 @@ Agents and multi-agent systems can be extremely powerful and valuable if applied
 Langgraph outlines 4 main [multi-agent patterns](https://langchain-ai.github.io/langgraph/concepts/multi_agent/):
 
 1. Supervisor
-    
+    - The supervisor is the main agent that coordinates the work of the other agents.
+    - The supervisor is responsible for interacting with the user while sub-agents perform specific tasks for the supervisor but never interact with the user directly.
 2. Network
+    - Agents interact with each other in a peer-to-peer fashion.
 3. Hierarchical
+    - Agents are organized in a tree-like structure with a root agent coordinating the work of its children agents, and where the children agents can further coordinate the work of their own children agents, and so on.
 4. Custom
+    - Agents are connected in arbitrary ways. The connections and interactions between agents are completely custom and are not based on any of the other patterns.
