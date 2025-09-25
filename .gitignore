@@ -26,3 +26,6 @@ temp
 
 # langgraph
 .langgraph_api
+
+# User files
+ai_files/
