@@ -9,6 +9,10 @@ from rich.panel import Panel
 
 load_dotenv()
 
+def get_responsive_width(console: Console) -> int:
+    """Get responsive width with margins for panels."""
+    return min(120, console.size.width - 4) if console.size.width > 10 else 80
+
 async def stream_graph_responses(
         input: SupervisorState,
         graph: StateGraph,
@@ -66,7 +70,7 @@ async def stream_graph_responses(
 
             # Check if we're transitioning between different AI sources
             if current_ai_source != ai_source:
-                # If we have accumulated content, display it in a panel
+                # Finalize previous agent's content in a panel
                 if current_content.strip() and current_ai_source:
                     style = AGENT_STYLES[current_ai_source]
                     panel = Panel(
@@ -74,13 +78,19 @@ async def stream_graph_responses(
                         title=f"{style['emoji']} {style['name']}",
                         border_style=style['color'],
                         title_align="left",
-                        padding=(1, 2)  # (vertical, horizontal) padding
+                        padding=(1, 2),
+                        width=get_responsive_width(console)
                     )
                     console.print(panel)
-                    console.print()  # Add spacing between panels
-                    current_content = ""
+                    console.print()  # Add spacing after completed panel
 
+                # Start new agent
                 current_ai_source = ai_source
+                current_content = ""
+            elif current_ai_source is None:
+                # First AI message
+                current_ai_source = ai_source
+                current_content = ""
 
             # Handle tool calls
             if message_chunk.response_metadata:
@@ -88,7 +98,11 @@ async def stream_graph_responses(
                 if finish_reason == "tool_calls":
                     # Print accumulated tool args if we have them
                     if current_tool_args.strip():
-                        console.print(f"  [dim]{current_tool_args.strip()}[/dim]")
+                        if current_ai_source:
+                            style = AGENT_STYLES[current_ai_source]
+                            console.print(f"  [dim {style['color']}]{current_tool_args.strip()}[/dim {style['color']}]")
+                        else:
+                            console.print(f"  [dim]{current_tool_args.strip()}[/dim]")
                         current_tool_args = ""
                     console.print("  🔧 [yellow]Tool call completed[/yellow]")
                     console.print()  # Add spacing after tool completion
@@ -108,7 +122,7 @@ async def stream_graph_responses(
                     # Accumulate args instead of printing immediately
                     current_tool_args += args
             else:
-                # Accumulate content for the current agent
+                # Just accumulate content for panel display
                 if message_chunk.content:
                     current_content += message_chunk.content
         else:
@@ -117,10 +131,14 @@ async def stream_graph_responses(
 
     # Print any remaining tool args
     if current_tool_args.strip():
-        console.print(f"  [dim]{current_tool_args.strip()}[/dim]")
+        if current_ai_source:
+            style = AGENT_STYLES[current_ai_source]
+            console.print(f"  [dim {style['color']}]{current_tool_args.strip()}[/dim {style['color']}]")
+        else:
+            console.print(f"  [dim]{current_tool_args.strip()}[/dim]")
         console.print()
 
-    # Display final accumulated content
+    # Finalize the last agent's content in a panel
     if current_content.strip() and current_ai_source:
         style = AGENT_STYLES[current_ai_source]
         panel = Panel(
@@ -128,7 +146,8 @@ async def stream_graph_responses(
             title=f"{style['emoji']} {style['name']}",
             border_style=style['color'],
             title_align="left",
-            padding=(1, 2)  # (vertical, horizontal) padding
+            padding=(1, 2),
+            width=get_responsive_width(console)
         )
         console.print(panel)
         console.print()  # Add spacing after final panel
@@ -136,10 +155,8 @@ async def stream_graph_responses(
 
 async def main():
     """Main function to run the supervisor with subgraphs."""
-    # Create console with reasonable width and margins
-    temp_console = Console()
-    console_width = min(120, temp_console.size.width - 4) if temp_console.size.width > 10 else 80
-    console = Console(width=console_width)
+    # Create console without fixed width - let it be responsive
+    console = Console()
 
     try:
         config = RunnableConfig(configurable={
@@ -147,13 +164,14 @@ async def main():
             "recursion_limit": 50,
         })
 
-        # Welcome panel
+        # Welcome panel with responsive width
         welcome_panel = Panel(
             "Multi-Agent Supervisor with Subgraphs\nType 'exit' or 'quit' to stop",
             title="🎯 AI Launchpad",
             border_style="blue",
             title_align="center",
-            padding=(1, 2)  # Add padding to welcome panel
+            padding=(1, 2),  # Add padding to welcome panel
+            width=get_responsive_width(console)
         )
         console.print(welcome_panel)
         console.print()  # Add spacing after welcome
@@ -161,27 +179,16 @@ async def main():
         while True:
             console.print()
             user_input = console.input("[bold blue]User:[/bold blue] ")
+            console.print()  # Add spacing after user input
 
             if user_input.lower() in ["exit", "quit"]:
                 console.print("\n[yellow]Exit command received. Goodbye! 👋[/yellow]\n")
                 break
 
-            # Display user input in a panel
-            user_panel = Panel(
-                user_input,
-                title="🥷 Human",
-                border_style="blue",
-                title_align="left",
-                padding=(1, 2)  # Add padding to user input panel
-            )
-            console.print(user_panel)
-            console.print()  # Add spacing after user input
-
             graph_input = SupervisorState(
                 messages=[HumanMessage(content=user_input)]
             )
 
-            console.print("\n[bold]🤖 AI Agents Response:[/bold]")
             await stream_graph_responses(graph_input, supervisor_graph, console, config=config)
 
     except Exception as e:
