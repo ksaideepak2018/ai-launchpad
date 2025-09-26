@@ -120,7 +120,11 @@ async def supervisor_router(state: SupervisorState) -> str:
 
 builder = StateGraph(SupervisorState)
 
-builder.add_node(supervisor)
+builder.add_node(
+    supervisor, 
+    # This is a new feature and is only needed for visualization, doesn't impact runtime
+    # destinations=("tools", "call_researcher", "call_copywriter", END)
+    )
 builder.add_node("tools", ToolNode(tools))
 builder.add_node(call_researcher)
 builder.add_node(call_copywriter)
@@ -147,4 +151,4 @@ graph = builder.compile(checkpointer=MemorySaver())
 
 # Visualize the graph
 from IPython.display import Image
-Image(graph.get_graph().draw_mermaid_png())
+Image(graph.get_graph(xray=True).draw_mermaid_png())
