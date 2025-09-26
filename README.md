@@ -10,6 +10,8 @@ The AI Launchpad is a community for AI builders, entrepreneurs, and business lea
 
 Sign up for the [**AI Launchpad**](https://kenneth-liao.kit.com/join) waitlist and get access to the Discord server (live now!).
 
+If you want to support the project and help me create more content, you can [buy me a ☕](https://www.buymeacoffee.com/kennethliao). Thank you so much for your support!
+
 ## About Me 👋🏼
 
 Hi! I'm Kenny, a Data Analytics Manager, AI Architect, and founder of the AI Launchpad. I also have a [YouTube channel](https://www.youtube.com/@KennethLiao) where **I teach you how to build AI solutions that solve real problems**.
@@ -111,6 +113,7 @@ At some point I'll also be migrating past projects from my Youtube channel to th
 1. [Building Effective Agents (langgraph_module/effective_agents)](ai_launchpad/langgraph_module/effective_agents/README.md)
 2. [Frontends for Langgraph Agents (langgraph_module/frontends)](ai_launchpad/langgraph_module/frontends/README.md)
 3. [Langgraph Server (langgraph_module/langgraph_server)](ai_launchpad/langgraph_module/langgraph_server/README.md)
+4. [Multi-Agent AI Applications (langgraph_module/multi_agent)](ai_launchpad/langgraph_module/multi_agent/README.md)
 
 ### [Agents Module](ai_launchpad/agents_module/README.md)
 
