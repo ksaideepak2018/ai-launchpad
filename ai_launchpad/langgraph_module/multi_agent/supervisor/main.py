@@ -167,7 +167,7 @@ async def main():
         # Welcome panel with responsive width
         welcome_panel = Panel(
             "Multi-Agent Supervisor with Subgraphs\nType 'exit' or 'quit' to stop",
-            title="🎯 AI Launchpad",
+            title="🚀 AI Launchpad",
             border_style="blue",
             title_align="center",
             padding=(1, 2),  # Add padding to welcome panel
