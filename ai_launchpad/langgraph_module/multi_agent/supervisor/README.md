@@ -1,5 +1,15 @@
 # Multi-Agent Supervisor
 
+## Video
+
+[![Multi Agent Supervisor in Langgraph](../../../static/thumbnails/multi-agents2.png)](https://www.youtube.com/watch?v=rwqGQEzXF-o)
+
+## Getting Started
+
+See the `Getting Started` section in the root [README](../../../../README.md) for step-by-step instructions on how to install the repo and run the projects.
+
+## Supervisor Pattern
+
 ![Supervisor Graph](../../../static/supervisor-graph.png)
 
 This multi-agent example uses a supervisor agent to coordinate the work of multiple sub-agents. The supervisor agent is responsible for interacting with the user and managing the workflow. The sub-agents perform specific tasks delegated by the supervisor, but never interact with the user directly.
